@@ -1,6 +1,6 @@
+from src.vectorstore import VectorStore, get_vector_store
+from src.embedding import EmbeddingManager, get_embedding_manager
 
-from src.vectorstore import vector_store, VectorStore
-from src.embedding import embedding_manager, EmbeddingManager
 
 class Retriever:
     def __init__(self, vector_store: VectorStore, embedding_manager: EmbeddingManager):
@@ -10,8 +10,8 @@ class Retriever:
     def retrive_context(self, query: str, top_k: int = 5):
         query_emb = self.embedding_manager.generate_embeddings([query])[0]
         try:
-            results = self.vector_store.collection.query(
-                query_embeddings = [query_emb.tolist()],
+            results = self.vector_store.query(
+                query_embeddings=[query_emb.tolist()],
                 n_results=top_k
             )
 
@@ -25,19 +25,26 @@ class Retriever:
 
                 for i, (document, ID, metadata, distance) in enumerate(zip(documents, ids, metadatas, distances)):
                     context.append({
-                        "id":ID,
-                        "content":document,
-                        "metadata":metadata,
-                        "distance":distance,
-                        "rank":i+1
+                        "id": ID,
+                        "content": document,
+                        "metadata": metadata,
+                        "distance": distance,
+                        "rank": i + 1
                     })
-            
             else:
-                print("no documents found")
+                print("No documents found")
 
             return context
         except:
-            print("error retrieving data")
+            print("Error retrieving data")
             raise
 
-retriver = Retriever(vector_store, embedding_manager)
+
+_retriever = None
+
+
+def get_retriever() -> Retriever:
+    global _retriever
+    if _retriever is None:
+        _retriever = Retriever(get_vector_store(), get_embedding_manager())
+    return _retriever

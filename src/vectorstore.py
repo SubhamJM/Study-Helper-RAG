@@ -2,38 +2,39 @@ import chromadb
 import os
 import uuid
 from typing import List, Any
-import numpy as np 
+import numpy as np
+
 
 class VectorStore:
     def __init__(self, collection_name: str = "pdf_documents", persist_directory: str = "./vector_store", description: str = "This vectorDB stores all the information regarding the subject Theory of Computation"):
         self.collection_name = collection_name
         self.persist_directory = persist_directory
         self.description = description
-        self.collection = None
-        self.client = None
-        self._initiate_db()
+        self._collection = None
+        self._client = None
 
     def _initiate_db(self):
+        if self._client is not None:
+            return
         try:
-            print(f"Initiating vectordb with name {self.collection_name} and description: {self.description}")
+            print(f"Initiating vectordb with name {self.collection_name}")
             os.makedirs(self.persist_directory, exist_ok=True)
-            self.client = chromadb.PersistentClient(path=self.persist_directory)
-
-            self.collection = self.client.get_or_create_collection(
+            self._client = chromadb.PersistentClient(path=self.persist_directory)
+            self._collection = self._client.get_or_create_collection(
                 name=self.collection_name,
-                metadata={"description":self.description}
+                metadata={"description": self.description}
             )
-
-            print(f"vectordb created successfully at {self.persist_directory}")
+            print(f"Vectordb ready at {self.persist_directory}")
         except:
-            print("error creating vectordb")
+            print("Error creating vectordb!")
             raise
 
     def add_documents(self, documents: List[Any], embeddings: np.ndarray):
+        self._initiate_db()
         if len(documents) != len(embeddings):
             raise ValueError("Length of documents and embeddings must be same")
-        
-        print(f"Addings {len(documents)} documents to the vectordb")
+
+        print(f"Adding {len(documents)} documents to the vectordb")
 
         ids_list = []
         metadatas_list = []
@@ -50,7 +51,7 @@ class VectorStore:
             embeddings_list.append(emb.tolist())
 
         try:
-            self.collection.add(
+            self._collection.add(
                 ids=ids_list,
                 documents=documents_list,
                 embeddings=embeddings_list,
@@ -61,4 +62,19 @@ class VectorStore:
             print("Error adding to vectordb!")
             raise
 
-vector_store = VectorStore()
+    def query(self, query_embeddings, n_results: int = 5):
+        self._initiate_db()
+        return self._collection.query(
+            query_embeddings=query_embeddings,
+            n_results=n_results
+        )
+
+
+_vector_store = None
+
+
+def get_vector_store() -> VectorStore:
+    global _vector_store
+    if _vector_store is None:
+        _vector_store = VectorStore()
+    return _vector_store
