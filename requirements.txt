@@ -11,3 +11,7 @@ sentence-transformers
 ipykernel
 pypdf
 pdfplumber
+streamlit
+fastapi
+uvicorn
+langchain-google-genai
